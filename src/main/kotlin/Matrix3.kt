@@ -59,24 +59,43 @@ data class Matrix3 (
         this.xz*that.yx + this.yz*that.yy + this.zz*that.yz,
         this.xz*that.zx + this.yz*that.zy + this.zz*that.zz)
 
-    // computes the squared frobenius norm
+    /**
+     * computes the square of the frobenius norm of this matrix
+     * @return the frobenius norm squared
+     */
     fun normSq(): Float = xx*xx + yx*yx + zx*zx + xy*xy + yy*yy + zy*zy + xz*xz + yz*yz + zz*zz
 
-    // computes the frobenius norm
+    /**
+     * computes the frobenius norm of this matrix
+     * @return the frobenius norm
+     */
     fun norm(): Float = sqrt(normSq())
 
-    // computes the determinant
+    /**
+     * computes the determinant of this matrix
+     * @return the determinant
+     */
     fun det(): Float = (xz*yx - xx*yz)*zy + (xx*yy - xy*yx)*zz + (xy*yz - xz*yy)*zx
 
-    // computes the trace
+    /**
+     * computes the trace of this matrix
+     * @return the trace
+     */
     fun trace(): Float = xx + yy + zz
 
-    // computes the transpose
+    /**
+     * computes the transpose of this matrix
+     * @return the transpose matrix
+     */
     fun transpose(): Matrix3 = Matrix3(
         xx, xy, xz,
         yx, yy, yz,
         zx, zy, zz)
 
+    /**
+     * computes the inverse of this matrix
+     * @return the inverse matrix
+     */
     fun inv(): Matrix3 {
         val det = det()
         return Matrix3(
@@ -87,10 +106,15 @@ data class Matrix3 (
 
     operator fun div(that: Float): Matrix3 = this*(1f/that)
 
-    // computes the right division, this * that^-1
+    /**
+     * computes the right division, this * that^-1
+     */
     operator fun div(that: Matrix3): Matrix3 = this*that.inv()
 
-    // computes the inverse transpose
+    /**
+     * computes the inverse transpose of this matrix
+     * @return the inverse transpose matrix
+     */
     fun invTranspose(): Matrix3 {
         val det = det()
         return Matrix3(
@@ -99,7 +123,10 @@ data class Matrix3 (
             (yx*zy - yy*zx)/det, (xy*zx - xx*zy)/det, (xx*yy - xy*yx)/det)
     }
 
-    // computes the nearest orthonormal matrix to this matrix
+    /**
+     * computes the nearest orthonormal matrix to this matrix
+     * @return the rotation matrix
+     */
     fun orthonormalize(): Matrix3 {
         var curMat = this
         var curDet = 1f/0f
@@ -116,9 +143,19 @@ data class Matrix3 (
         return curMat
     }
 
+    /**
+     * linearly interpolates this matrix to that matrix by t
+     * @param that the matrix towards which to interpolate
+     * @param t the amount by which to interpolate
+     * @return the interpolated matrix
+     */
     fun lerp(that: Matrix3, t: Float): Matrix3 = (1f - t)*this + t*that
 
     // assumes this matrix is orthonormal and converts this to a quaternion
+    /**
+     * creates a quaternion representing the same rotation as this matrix, assuming the matrix is a rotation matrix
+     * @return the quaternion
+     */
     fun toQuaternionAssumingOrthonormal(): Quaternion {
         if (this.det() <= 0f)
             throw Exception("Attempt to convert negative determinant matrix to quaternion")
@@ -134,9 +171,17 @@ data class Matrix3 (
         }
     }
 
-    // orthogonalizes the matrix then returns the quaternion
+    // orthogonalizes the matrix then returns the quaternioN
+    /**
+     * creates a quaternion representing the same rotation as this matrix
+     * @return the quaternion
+     */
     fun toQuaternion(): Quaternion = orthonormalize().toQuaternionAssumingOrthonormal()
 
+    /**
+     * creates an eulerAngles representing the same rotation as this matrix, assuming the matrix is a rotation matrix
+     * @return the eulerAngles
+     */
     fun toEulerAnglesAssumingOrthonormal(order: EulerOrder): EulerAngles {
         if (this.det() <= 0f)
             throw Exception("Attempt to convert negative determinant matrix to euler angles")
@@ -208,6 +253,10 @@ data class Matrix3 (
     }
 
     // orthogonalizes the matrix then returns the euler angles
+    /**
+     * creates an eulerAngles representing the same rotation as this matrix
+     * @return the eulerAngles
+     */
     fun toEulerAngles(order: EulerOrder): EulerAngles = orthonormalize().toEulerAnglesAssumingOrthonormal(order)
 }
 

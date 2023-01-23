@@ -9,6 +9,10 @@ enum class EulerOrder {XYZ, YZX, ZXY, ZYX, YXZ, XZY}
  * Euler Angles contains both the x y z angle parameters and the order of application
  */
 data class EulerAngles(val order: EulerOrder, val x: Float, val y: Float, val z: Float) {
+    /**
+     * creates a quaternion which represents the same rotation as this eulerAngles
+     * @return the quaternion
+     */
     fun toQuaternion(): Quaternion {
         val cosX = cos(x/2f)
         val cosY = cos(y/2f)
@@ -58,5 +62,9 @@ data class EulerAngles(val order: EulerOrder, val x: Float, val y: Float, val z:
     }
 
     // temp, replace with direct conversion later
+    /**
+     * creates a matrix which represents the same rotation as this eulerAngles
+     * @return the matrix
+     */
     fun toMatrix(): Matrix3 = this.toQuaternion().toMatrix()
 }

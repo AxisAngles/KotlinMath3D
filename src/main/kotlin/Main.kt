@@ -69,6 +69,30 @@ fun testQuatMatrixConversion() {
     }
 }
 
+fun testQuaternionArithmetic() {
+    for (i in 1..1000) {
+        val Q = randQuaternion()
+        val A = Q*Q.inv() - Quaternion.ONE
+        val B = Q.pow(-1f) - Q.inv()
+        val C = Q.pow(1f) - Q
+        val D = Q.pow(2f) - Q*Q
+        val E = 1f/Q - Q.inv()
+        val F = Q/Q - Quaternion.ONE
+        if (A.len() > 1e-6) {
+            throw Exception("Quaternion inv accuracy test failed")
+        }
+        if (B.len() > 1e-5 || C.len() > 1e-5 || D.len() > 1e-5) {
+            throw Exception("Quaternion pow accuracy test failed")
+        }
+        if (E.len() > 1e-6) {
+            throw Exception("Float/Quaternion accuracy test failed")
+        }
+        if (F.len() > 1e-6) {
+            throw Exception("Quaternion/Quaternion accuracy test failed")
+        }
+    }
+}
+
 
 fun main() {
 //    println(Quaternion(1f, 2f, 3f, 4f).inv())
@@ -79,6 +103,7 @@ fun main() {
 
     testMatrixOrthonormalize()
     testQuatMatrixConversion()
+    testQuaternionArithmetic()
 
 
     // EULER ANGLE TESTS

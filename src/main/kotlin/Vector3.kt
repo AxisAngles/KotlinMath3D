@@ -72,7 +72,11 @@ data class Vector3(val x: Float, val y: Float, val z: Float) {
         this.z/that
     )
 
-    // computes the angle between this and that
+    /**
+     * computes the angle between this vector with that vector
+     * @param that the vector to which the angle is computed
+     * @return the angle
+     **/
     fun angleTo(that: Vector3): Float = atan2(this.cross(that).len(), this.dot(that))
 }
 
