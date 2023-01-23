@@ -101,17 +101,14 @@ data class Matrix3 (
 
     // computes the nearest orthonormal matrix to this matrix
     fun orthonormalize(): Matrix3 {
-        if (this.det() <= 0f)
-            throw Exception("Attempt to orthonormalize a matrix with negative determinant")
-
         var curMat = this
         var curDet = 1f/0f
 
         for (i in 1..100) {
             val newMat = (curMat + curMat.invTranspose())/2f
             val newDet = abs(newMat.det())
-            // should almost always break immediately
-            if (newDet <= 1.0000001 || newDet >= curDet) return newMat
+            // should almost always exit immediately
+            if (newDet <= 1.0000001f || newDet >= curDet) return newMat
             curMat = newMat
             curDet = newDet
         }
@@ -123,6 +120,9 @@ data class Matrix3 (
 
     // assumes this matrix is orthonormal and converts this to a quaternion
     fun toQuaternionAssumingOrthonormal(): Quaternion {
+        if (this.det() <= 0f)
+            throw Exception("Attempt to convert negative determinant matrix to quaternion")
+
         if (yy > -zz && zz > -xx && xx > -yy) {
             return Quaternion(1 + xx + yy + zz, yz - zy, zx - xz, xy - yx)
         } else if (xx > yy && xx > zz) {
@@ -138,6 +138,9 @@ data class Matrix3 (
     fun toQuaternion(): Quaternion = orthonormalize().toQuaternionAssumingOrthonormal()
 
     fun toEulerAnglesAssumingOrthonormal(order: EulerOrder): EulerAngles {
+        if (this.det() <= 0f)
+            throw Exception("Attempt to convert negative determinant matrix to euler angles")
+
         val ETA = 1.57079632f
         if (order == EulerOrder.XYZ) {
             val kc = zy*zy + zz*zz
@@ -181,7 +184,7 @@ data class Matrix3 (
             )
         } else if (order == EulerOrder.YXZ) {
             val kc = zx*zx + zz*zz
-            if (kc == 0f) return EulerAngles(EulerOrder.YXZ, atan2(-xz, xx), 0f, ETA.withSign(-zy))
+            if (kc == 0f) return EulerAngles(EulerOrder.YXZ, ETA.withSign(-zy), atan2(-xz, xx), 0f)
 
             return EulerAngles(
                 EulerOrder.YXZ,
@@ -191,7 +194,7 @@ data class Matrix3 (
             )
         } else if (order == EulerOrder.XZY) {
             val kc = yz*yz + yy*yy
-            if (kc == 0f) return EulerAngles(EulerOrder.XZY, ETA.withSign(-yx), atan2(-zy, zz), 0f)
+            if (kc == 0f) return EulerAngles(EulerOrder.XZY, atan2(-zy, zz), 0f, ETA.withSign(-yx))
 
             return EulerAngles(
                 EulerOrder.XZY,

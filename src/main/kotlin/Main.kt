@@ -10,32 +10,118 @@ fun randFloat(): Float {
     return randInt().toFloat()/2147483648f
 }
 
-fun randMatrixNonUniform(): Matrix3 {
+fun randGaussian(): Float {
+    return sqrt(-2f*ln(1f - randFloat()))*cos(PI.toFloat()*randFloat())
+}
+
+fun randRotMatrix(): Matrix3 {
     return EulerAngles(EulerOrder.YXZ, 6.28318f*randFloat(), 6.28318f*randFloat(), 6.28318f*randFloat()).toMatrix()
 }
 
-fun testEuler(order: EulerOrder, exception: String) {
-    for (i in 1..1000) {
-        val M = randMatrixNonUniform()
-        val A = M.toEulerAnglesAssumingOrthonormal(order)
-        val N = A.toMatrix()
-        if ((N - M).norm() > 1e-6f)
-            throw Exception(exception)
+fun randMatrix(): Matrix3 {
+    return Matrix3(
+        randGaussian(), randGaussian(), randGaussian(),
+        randGaussian(), randGaussian(), randGaussian(),
+        randGaussian(), randGaussian(), randGaussian()
+    )
+}
+
+fun randQuaternion(): Quaternion {
+    return Quaternion(randGaussian(), randGaussian(), randGaussian(), randGaussian())
+}
+
+fun testEulerMatrix(order: EulerOrder, M: Matrix3, exception: String) {
+    // We convert to euler angles and back and see if they are reasonably similar
+    val N = M.toEulerAngles(order).toMatrix()
+    if ((N - M).norm() > 1e-6) {
+        println("norm error: " + (N - M).norm().toString())
+        throw Exception(exception)
     }
 }
 
+fun testEulerConversion(order: EulerOrder, exception: String) {
+    for (i in 1..1000) {
+        testEulerMatrix(order, randRotMatrix(), exception)
+    }
+}
+
+fun testMatrixOrthonormalize() {
+    for (i in 1..1000) {
+        val M = randMatrix()
+
+        val N = M.invTranspose().orthonormalize()
+        val O = M.orthonormalize()
+        if ((N - O).norm() > 1e-5) {
+            println("norm error: " + (N - O).norm().toString())
+            throw Exception("Matrix orthonormalization accuracy test failed")
+        }
+    }
+}
+
+fun testQuatMatrixConversion() {
+    for (i in 1..1000) {
+        val M = randRotMatrix()
+        val N = (randGaussian()*M.toQuaternion()).toMatrix()
+        if ((N - M).norm() > 1e-6) {
+            println("norm error: " + (N - M).norm().toString())
+            throw Exception("Quaternion Matrix conversion accuracy test failed")
+        }
+    }
+}
+
+
 fun main() {
-    testEuler(EulerOrder.XYZ, "toEulerAnglesXYZ accuracy test failed")
-    testEuler(EulerOrder.YZX, "toEulerAnglesYZX accuracy test failed")
-    testEuler(EulerOrder.ZXY, "toEulerAnglesZXY accuracy test failed")
-    testEuler(EulerOrder.ZYX, "toEulerAnglesZYX accuracy test failed")
-    testEuler(EulerOrder.YXZ, "toEulerAnglesYXZ accuracy test failed")
-    testEuler(EulerOrder.XZY, "toEulerAnglesXZY accuracy test failed")
+//    println(Quaternion(1f, 2f, 3f, 4f).inv())
+//    println(1f/Quaternion(1f, 2f, 3f, 4f))
+//    println(Quaternion(1f, 2f, 3f, 4f).pow(-1f))
 
 
-    val ETA = 1.57079632f
-    println(Matrix3(0f, 0f, 1f, sin(1f), cos(1f), 0f, -cos(1f), sin(1f), 0f).toEulerAngles(EulerOrder.XYZ))
 
-    //println(Quaternion(1f, 0f, 0f, 0f).align())
-    println(Quaternion(1f, 1f, 0f, 0f).angleR()*2f)
+    testMatrixOrthonormalize()
+    testQuatMatrixConversion()
+
+
+    // EULER ANGLE TESTS
+    testEulerConversion(EulerOrder.XYZ, "toEulerAnglesXYZ accuracy test failed")
+    testEulerConversion(EulerOrder.YZX, "toEulerAnglesYZX accuracy test failed")
+    testEulerConversion(EulerOrder.ZXY, "toEulerAnglesZXY accuracy test failed")
+    testEulerConversion(EulerOrder.ZYX, "toEulerAnglesZYX accuracy test failed")
+    testEulerConversion(EulerOrder.YXZ, "toEulerAnglesYXZ accuracy test failed")
+    testEulerConversion(EulerOrder.XZY, "toEulerAnglesXZY accuracy test failed")
+
+    for (i in 1..1000) {
+        val ang = 6.28318f*randFloat()
+        val M = Matrix3(0f, 0f, 1f, sin(ang), cos(ang), 0f, -cos(ang), sin(ang), 0f)
+        testEulerMatrix(EulerOrder.XYZ, M, "toEulerAnglesXYZ singularity accuracy test failed")
+    }
+
+    for (i in 1..1000) {
+        val ang = 6.28318f*randFloat()
+        val M = Matrix3(0f, -cos(ang), sin(ang), 1f, 0f, 0f, 0f, sin(ang), cos(ang))
+        testEulerMatrix(EulerOrder.YZX, M, "toEulerAnglesYZX singularity accuracy test failed")
+    }
+
+    for (i in 1..1000) {
+        val ang = 6.28318f*randFloat()
+        val M = Matrix3(cos(ang), 0f, sin(ang), sin(ang), 0f, -cos(ang), 0f, 1f, 0f)
+        testEulerMatrix(EulerOrder.ZXY, M, "toEulerAnglesZXY singularity accuracy test failed")
+    }
+
+    for (i in 1..1000) {
+        val ang = 6.28318f*randFloat()
+        val M = Matrix3(0f, -sin(ang), cos(ang), 0f, cos(ang), sin(ang), -1f, 0f, 0f)
+        testEulerMatrix(EulerOrder.ZYX, M, "toEulerAnglesZYX singularity accuracy test failed")
+    }
+
+    for (i in 1..1000) {
+        val ang = 6.28318f*randFloat()
+        val M = Matrix3(cos(ang), sin(ang), 0f, 0f, 0f, -1f, -sin(ang), cos(ang), 0f)
+        testEulerMatrix(EulerOrder.YXZ, M, "toEulerAnglesYXZ singularity accuracy test failed")
+    }
+
+    for (i in 1..1000) {
+        val ang = 6.28318f*randFloat()
+        val M = Matrix3(0f, -1f, 0f, cos(ang), 0f, -sin(ang), sin(ang), 0f, cos(ang))
+        testEulerMatrix(EulerOrder.XZY, M, "toEulerAnglesXZY singularity accuracy test failed")
+    }
 }

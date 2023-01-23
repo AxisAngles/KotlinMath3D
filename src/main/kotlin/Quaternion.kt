@@ -329,11 +329,14 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * computes the matrix representing this quaternion's rotation
      * @return rotation matrix
      **/
-    fun toMatrix(): Matrix3 = Matrix3(
-        w*w + x*x - y*y - z*z, 2f*(x*y - w*z), 2f*(w*y + x*z),
-        2f*(x*y + w*z), w*w - x*x + y*y - z*z, 2f*(y*z - w*x),
-        2f*(x*z - w*y), 2f*(w*x + y*z), w*w - x*x - y*y + z*z
-    )
+    fun toMatrix(): Matrix3 {
+        val d = lenSq()
+        return Matrix3(
+            (w*w + x*x - y*y - z*z)/d, 2f*(x*y - w*z)/d, 2f*(w*y + x*z)/d,
+            2f*(x*y + w*z)/d, (w*w - x*x + y*y - z*z)/d, 2f*(y*z - w*x)/d,
+            2f*(x*z - w*y)/d, 2f*(w*x + y*z)/d, (w*w - x*x - y*y + z*z)/d
+        )
+    }
 
     /**
      * computes the euler angles representing this quaternion's rotation
