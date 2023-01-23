@@ -114,10 +114,15 @@ fun main() {
     testEulerConversion(EulerOrder.YXZ, "toEulerAnglesYXZ accuracy test failed")
     testEulerConversion(EulerOrder.XZY, "toEulerAnglesXZY accuracy test failed")
 
+    val ETA = 1.57079632f
     for (i in 1..1000) {
         val ang = 6.28318f*randFloat()
         val M = Matrix3(0f, 0f, 1f, sin(ang), cos(ang), 0f, -cos(ang), sin(ang), 0f)
         testEulerMatrix(EulerOrder.XYZ, M, "toEulerAnglesXYZ singularity accuracy test failed")
+        // test around the singularity
+//        val r = 1e-7f*randGaussian() + ETA
+//        val N = EulerAngles(EulerOrder.XYZ, ang, r, -ang).toMatrix()
+//        testEulerMatrix(EulerOrder.XYZ, N, "toEulerAnglesXYZ singularity accuracy test failed")
     }
 
     for (i in 1..1000) {

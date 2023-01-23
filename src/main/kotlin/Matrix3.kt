@@ -171,13 +171,78 @@ data class Matrix3 (
         }
     }
 
-    // orthogonalizes the matrix then returns the quaternioN
+    // orthogonalizes the matrix then returns the quaternion
     /**
      * creates a quaternion representing the same rotation as this matrix
      * @return the quaternion
      */
     fun toQuaternion(): Quaternion = orthonormalize().toQuaternionAssumingOrthonormal()
 
+
+    /*
+        the standard algorithm:
+
+        yAng = asin(clamp(zx, -1, 1))
+        if (abs(zx) < 0.9999999f) {
+            xAng = atan2(-zy, zz)
+            zAng = atan2(-yx, xx)
+        } else {
+            xAng = atan2(yz, yy)
+            zAng = 0
+        }
+
+
+
+        problems with the standard algorithm:
+
+    1)
+            yAng = asin(clamp(zx, -1, 1))
+
+    FIX:
+            yAng = atan2(zx, sqrt(zy*zy + zz*zz))
+
+        this loses many bits of accuracy when near the singularity, zx = +-1 and
+        can cause the algorithm to return completely inaccurate results with only
+        small floating point errors in the matrix. this happens because zx is
+        NOT sin(pitch), but rather errorTerm*sin(pitch).
+
+
+
+    2)
+            if (abs(zx) < 0.9999999f) {
+
+    FIX:
+            if (zy*zy + zz*zz > 0f) {
+
+        this clause, meant to reduce the inaccuracy of the code following does
+        not actually test for the condition that makes the following atans unstable.
+        that is, when (zy, zz) and (yx, xx) are near 0.
+        after several matrix multiplications, the error term is expected to be
+        larger than 0.0000001. Often times, this clause will not catch the conditions
+        it is trying to catch.
+
+
+
+    3)
+            zAng = atan2(-yx, xx)
+
+    FIX:
+            zAng = atan2(xy*zz - xz*zy, yy*zz - yz*zy)
+
+        xAng and zAng are being computed separately. In the case of near singularity
+        the angles of xAng and zAng are effectively added together as they represent
+        the same operation (a rotation about the global y-axis). When computed
+        separately, it is not guaranteed that the xAng + zAng add together to give
+        the actual final rotation about the global y-axis.
+
+
+
+    4)
+        after many matrix operations are performed, without orthonormalization
+        the matrix will contain floating point errors that will throw off the
+        accuracy of any euler angles algorithm. orthonormalization should be
+        built into the prerequisites for this function
+     */
     /**
      * creates an eulerAngles representing the same rotation as this matrix, assuming the matrix is a rotation matrix
      * @return the eulerAngles
