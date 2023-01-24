@@ -132,7 +132,8 @@ data class Matrix3 (
             val newMat = (curMat + curMat.invTranspose())/2f
             val newDet = abs(newMat.det())
             // should almost always exit immediately
-            if (newDet <= 1.0000001f || newDet >= curDet) return newMat
+            if (newDet >= curDet) return curMat
+            if (newDet <= 1.0000001f) return newMat
             curMat = newMat
             curDet = newDet
         }
@@ -243,18 +244,18 @@ data class Matrix3 (
      */
 
 
-    fun toEulerAnglesXYZFaulty(): EulerAngles {
-        return if (abs(zx) < 0.9999999f)
-            EulerAngles(EulerOrder.XYZ,
-                atan2(-zy, zz),
-                asin(zx.coerceIn(-1f, 1f)),
-                atan2(-yx, xx))
-        else
-            EulerAngles(EulerOrder.XYZ,
-                atan2(yz, yy),
-                asin(zx.coerceIn(-1f, 1f)),
-                0f)
-    }
+//    fun toEulerAnglesXYZFaulty(): EulerAngles {
+//        return if (abs(zx) < 0.9999999f)
+//            EulerAngles(EulerOrder.XYZ,
+//                atan2(-zy, zz),
+//                asin(zx.coerceIn(-1f, 1f)),
+//                atan2(-yx, xx))
+//        else
+//            EulerAngles(EulerOrder.XYZ,
+//                atan2(yz, yy),
+//                asin(zx.coerceIn(-1f, 1f)),
+//                0f)
+//    }
 
     /**
      * creates an eulerAngles representing the same rotation as this matrix, assuming the matrix is a rotation matrix

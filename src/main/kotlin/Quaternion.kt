@@ -22,6 +22,10 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
         }
     }
 
+    constructor(w: Float, xyz: Vector3) : this(w, xyz.x, xyz.y, xyz.z)
+
+    val xyz get() = Vector3(x, y, z)
+
     operator fun unaryMinus(): Quaternion = Quaternion(-w, -x, -y, -z)
 
     operator fun plus(that: Quaternion): Quaternion = Quaternion(
@@ -60,6 +64,18 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * @return the length
      **/
     fun len(): Float = sqrt(w*w + x*x + y*y + z*z)
+
+    /**
+     * computes the square of the length of this quaternion's imaginary part
+     * @return the length squared
+     **/
+    fun imLenSq(): Float = x*x + y*y + z*z
+
+    /**
+     * computes the length of this quaternion's imaginary part
+     * @return the length
+     **/
+    fun imLen(): Float = sqrt(x*x + y*y + z*z)
 
     /**
      * @return the normalized quaternion
@@ -124,8 +140,8 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * @return the log of this quaternion
      **/
     fun log(): Quaternion {
-        val imLen = sqrt(x*x + y*y + z*z)
-        val len = sqrt(w*w + x*x + y*y + z*z)
+        val imLen = imLen()
+        val len = len()
 
         if (imLen == 0f) {
             return Quaternion(ln(len), x/w, y/w, z/w)
@@ -145,7 +161,7 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * @return the exponentiated quaternion
      **/
     fun exp(): Quaternion {
-        val ang = sqrt(x*x + y*y + z*z)
+        val ang = imLen()
         val len = exp(w)
 
         if (ang == 0f) {
@@ -169,14 +185,40 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      **/
     fun pow(t: Float): Quaternion = (log()*t).exp()
 
+
+//    fun pow(t: Float): Quaternion {
+//        val imLen = imLen()
+//        val ang = atan2(imLen, w)
+//
+//        val len = len().pow(t)
+//        val co = cos(t*ang)
+//        val si = sin(t*ang)
+//
+//        return if (imLen == 0f) {
+//            Quaternion(
+//                len*co,
+//                len*t*x,
+//                len*t*y,
+//                len*t*z
+//            )
+//        } else {
+//            Quaternion(
+//                len*co,
+//                len*si*x/imLen,
+//                len*si*y/imLen,
+//                len*si*z/imLen
+//            )
+//        }
+//    }
+
     /**
      * interpolates from this quaternion to that quaternion by t in quaternion space
      * @param that the quaternion to interpolate to
      * @param t the amount to interpolate
      * @return interpolated quaternion
      **/
-    fun interp(that: Quaternion, t: Float): Quaternion {
-        return if (t == 0f) {
+    fun interp(that: Quaternion, t: Float) =
+        if (t == 0f) {
             this
         } else if (t == 1f) {
             that
@@ -185,7 +227,6 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
         } else {
             (this/that).pow(1f - t)*that
         }
-    }
 
     /**
      * interpolates from this quaternion to that quaternion by t in rotation space
@@ -193,13 +234,12 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * @param t the amount to interpolate
      * @return interpolated quaternion
      **/
-    fun interpR(that: Quaternion, t: Float): Quaternion {
-        return if (this.dot(that) < 0f) {
+    fun interpR(that: Quaternion, t: Float) =
+        if (this.dot(that) < 0f) {
             this.interp(-that, t)
         } else {
             this.interp(that, t)
         }
-    }
 
     /**
      * linearly interpolates from this quaternion to that quaternion by t in quaternion space
@@ -215,25 +255,24 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * @param t the amount to interpolate
      * @return interpolated quaternion
      **/
-    fun lerpR(that: Quaternion, t: Float): Quaternion {
-        return if (this.dot(that) < 0f) {
+    fun lerpR(that: Quaternion, t: Float) =
+        if (this.dot(that) < 0f) {
             this.lerp(-that, t)
         } else {
             this.lerp(that, t)
         }
-    }
 
     /**
      * computes this quaternion's angle in quaternion space
      * @return angle
      **/
-    fun angle(): Float = atan2(sqrt(x*x + y*y + z*z), w)
+    fun angle(): Float = atan2(imLen(), w)
 
     /**
      * computes this quaternion's angle in rotation space
      * @return angle
      **/
-    fun angleR(): Float = 2f* atan2(sqrt(x*x + y*y + z*z), abs(w))
+    fun angleR(): Float = 2f* atan2(imLen(), abs(w))
 
     /**
      * computes the angle between this quaternion and that quaternion in quaternion space
@@ -281,11 +320,7 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * @param v the global axis
      * @return Q
      **/
-    fun project(v: Vector3): Quaternion {
-        val i = Vector3(x, y, z)
-        val p = i.dot(v)*v/v.lenSq()
-        return Quaternion(w, p.x, p.y, p.z)
-    }
+    fun project(v: Vector3) = Quaternion(w, xyz.dot(v)*v/v.lenSq())
 
     /**
      * finds Q, the quaternion nearest to this quaternion representing a rotation NOT on the global u axis
@@ -293,11 +328,7 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * @param v the global axis
      * @return Q
      **/
-    fun reject(v: Vector3): Quaternion {
-        val i = Vector3(x, y, z)
-        val r = v.cross(i).cross(v)/v.lenSq()
-        return Quaternion(w, r.x, r.y, r.z)
-    }
+    fun reject(v: Vector3) = Quaternion(w, v.cross(xyz).cross(v)/v.lenSq())
 
     /**
      * finds Q, the quaternion nearest to this quaternion whose local u direction aligns with the global v direction.
@@ -307,8 +338,8 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * @return Q
     **/
     fun align(u: Vector3, v: Vector3): Quaternion {
-        val U = Quaternion(0f, u.x, u.y, u.z)
-        val V = Quaternion(0f, v.x, v.y, v.z)
+        val U = Quaternion(0f, u)
+        val V = Quaternion(0f, v)
 
         return (V*this/U + (V/U).len()*this)/2f
     }
@@ -318,25 +349,19 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * @param that the vector to be transformed
      * @return that vector transformed by this quaternion
      **/
-    fun sandwich(that: Vector3): Vector3 {
-        val S = this*Quaternion(0f, that.x, that.y, that.z)/this
-        return Vector3(S.x, S.y, S.z)
-    }
+    fun sandwich(that: Vector3): Vector3 = (this*Quaternion(0f, that)/this).xyz
 
     /**
      * computes this quaternion's rotation axis
      * @return rotation axis
      **/
-    fun axis(): Vector3 = Vector3(x, y, z).unit()
+    fun axis(): Vector3 = xyz.unit()
 
     /**
      * computes the rotation vector representing this quaternion's rotation
      * @return rotation vector
      **/
-    fun toRotationVector(): Vector3 {
-        val log = this.log()
-        return Vector3(2f*log.x, 2f*log.y, 2f*log.z)
-    }
+    fun toRotationVector(): Vector3 = 2f*log().xyz
 
     /**
      * computes the matrix representing this quaternion's rotation

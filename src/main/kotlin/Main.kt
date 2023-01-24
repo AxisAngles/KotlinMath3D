@@ -1,4 +1,5 @@
 import kotlin.math.*
+import kotlin.system.measureTimeMillis
 
 var randSeed = 0
 fun randInt(): Int {
@@ -161,4 +162,54 @@ fun main() {
     testEulerSingularity(EulerOrder.ZYX, Y90, "toEulerAnglesZYX singularity accuracy test failed")
     testEulerSingularity(EulerOrder.YXZ, X90, "toEulerAnglesYXZ singularity accuracy test failed")
     testEulerSingularity(EulerOrder.XZY, Z90, "toEulerAnglesXZY singularity accuracy test failed")
+
+
+    // speed test a linear (align) method against some standard math functions
+    var x = Quaternion(1f, 2f, 3f, 4f)
+
+    val dtAlign = measureTimeMillis {
+        for (i in 1..10_000_000) {
+            val u = Vector3(1f, 0f, 0f)
+            val v = Vector3(0f, 1f, 0f)
+            // to make sure it is not optimized away
+            x = x.align(u, v)
+//            internally, x.align is:
+//            val U = Quaternion(0f, u)
+//            val V = Quaternion(0f, v)
+//            x = (V*x/U + (V/U).len()*x)/2f
+        }
+    }
+
+    var y = x.toMatrix()
+    val dtOrthonormalize = measureTimeMillis {
+        for (i in 1..10_000_000) {
+            // to make sure it is not optimized away
+            y = 1.0001f*y.orthonormalize()
+//            internally, x.align is:
+//            val U = Quaternion(0f, u)
+//            val V = Quaternion(0f, v)
+//            x = (V*x/U + (V/U).len()*x)/2f
+        }
+    }
+
+
+    val dtAtan2 = measureTimeMillis {
+        for (i in 1..10_000_000) {
+            atan2(1f, 1f) // 45 degrees
+        }
+    }
+
+
+    val dtAsin = measureTimeMillis {
+        for (i in 1..10_000_000) {
+            asin(0.7071f) // 45 degrees
+        }
+    }
+
+    println(x)
+
+    println(dtAlign) // 213
+    println(dtOrthonormalize) // 244
+    println(dtAtan2) // 610
+    println(dtAsin) // 3558
 }
