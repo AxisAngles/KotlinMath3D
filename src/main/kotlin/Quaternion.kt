@@ -278,12 +278,25 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
     /**
      * finds Q, the quaternion nearest to this quaternion representing a rotation purely about the global u axis
      * Q is NOT unitized
-     * @param u the local direction
+     * @param v the global axis
      * @return Q
      **/
-    fun project(u: Vector3): Quaternion {
-        val t = (x*u.x + y*u.y + z*u.z)/u.lenSq()
-        return Quaternion(w, t*u.x, t*u.y, t*u.z)
+    fun project(v: Vector3): Quaternion {
+        val i = Vector3(x, y, z)
+        val p = i.dot(v)*v/v.lenSq()
+        return Quaternion(w, p.x, p.y, p.z)
+    }
+
+    /**
+     * finds Q, the quaternion nearest to this quaternion representing a rotation NOT on the global u axis
+     * Q is NOT unitized
+     * @param v the global axis
+     * @return Q
+     **/
+    fun reject(v: Vector3): Quaternion {
+        val i = Vector3(x, y, z)
+        val r = v.cross(i).cross(v)/v.lenSq()
+        return Quaternion(w, r.x, r.y, r.z)
     }
 
     /**

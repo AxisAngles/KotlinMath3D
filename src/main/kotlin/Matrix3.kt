@@ -1,7 +1,4 @@
-import kotlin.math.abs
-import kotlin.math.atan2
-import kotlin.math.sqrt
-import kotlin.math.withSign
+import kotlin.math.*
 
 data class Matrix3 (
     val xx: Float, val yx: Float, val zx: Float,
@@ -160,14 +157,14 @@ data class Matrix3 (
         if (this.det() <= 0f)
             throw Exception("Attempt to convert negative determinant matrix to quaternion")
 
-        if (yy > -zz && zz > -xx && xx > -yy) {
-            return Quaternion(1 + xx + yy + zz, yz - zy, zx - xz, xy - yx)
+        return if (yy > -zz && zz > -xx && xx > -yy) {
+            Quaternion(1 + xx + yy + zz, yz - zy, zx - xz, xy - yx)
         } else if (xx > yy && xx > zz) {
-            return Quaternion(yz - zy, 1 + xx - yy - zz, xy + yx, xz + zx)
+            Quaternion(yz - zy, 1 + xx - yy - zz, xy + yx, xz + zx)
         } else if (yy > zz) {
-            return Quaternion(zx - xz, xy + yx, 1 - xx + yy - zz, yz + zy)
+            Quaternion(zx - xz, xy + yx, 1 - xx + yy - zz, yz + zy)
         } else {
-            return Quaternion(xy - yx, xz + zx, yz + zy, 1 - xx - yy + zz)
+            Quaternion(xy - yx, xz + zx, yz + zy, 1 - xx - yy + zz)
         }
     }
 
@@ -204,7 +201,8 @@ data class Matrix3 (
         this loses many bits of accuracy when near the singularity, zx = +-1 and
         can cause the algorithm to return completely inaccurate results with only
         small floating point errors in the matrix. this happens because zx is
-        NOT sin(pitch), but rather errorTerm*sin(pitch).
+        NOT sin(pitch), but rather errorTerm*sin(pitch), and small changes in zx
+        when zx is near +-1 make large changes in asin(zx).
 
 
 
@@ -243,6 +241,21 @@ data class Matrix3 (
         accuracy of any euler angles algorithm. orthonormalization should be
         built into the prerequisites for this function
      */
+
+
+    fun toEulerAnglesXYZFaulty(): EulerAngles {
+        return if (abs(zx) < 0.9999999f)
+            EulerAngles(EulerOrder.XYZ,
+                atan2(-zy, zz),
+                asin(zx.coerceIn(-1f, 1f)),
+                atan2(-yx, xx))
+        else
+            EulerAngles(EulerOrder.XYZ,
+                atan2(yz, yy),
+                asin(zx.coerceIn(-1f, 1f)),
+                0f)
+    }
+
     /**
      * creates an eulerAngles representing the same rotation as this matrix, assuming the matrix is a rotation matrix
      * @return the eulerAngles
@@ -252,68 +265,64 @@ data class Matrix3 (
             throw Exception("Attempt to convert negative determinant matrix to euler angles")
 
         val ETA = 1.57079632f
-        if (order == EulerOrder.XYZ) {
-            val kc = zy*zy + zz*zz
-            if (kc == 0f) return EulerAngles(EulerOrder.XYZ, atan2(yz, yy), ETA.withSign(zx), 0f)
+        when (order) {
+            EulerOrder.XYZ -> {
+                val kc = zy*zy + zz*zz
+                if (kc == 0f) return EulerAngles(EulerOrder.XYZ, atan2(yz, yy), ETA.withSign(zx), 0f)
 
-            return EulerAngles(
-                EulerOrder.XYZ,
-                atan2(          -zy,            zz),
-                atan2(           zx,      sqrt(kc)),
-                atan2(xy*zz - xz*zy, yy*zz - yz*zy)
-            )
-        } else if (order == EulerOrder.YZX) {
-            val kc = xx*xx + xz*xz
-            if (kc == 0f) return EulerAngles(EulerOrder.YZX, 0f, atan2(zx, zz), ETA.withSign(xy))
+                return EulerAngles(EulerOrder.XYZ,
+                    atan2(          -zy,            zz),
+                    atan2(           zx,      sqrt(kc)),
+                    atan2(xy*zz - xz*zy, yy*zz - yz*zy))
+            }
+            EulerOrder.YZX -> {
+                val kc = xx*xx + xz*xz
+                if (kc == 0f) return EulerAngles(EulerOrder.YZX, 0f, atan2(zx, zz), ETA.withSign(xy))
 
-            return EulerAngles(
-                EulerOrder.YZX,
-                atan2(xx*yz - xz*yx, xx*zz - xz*zx),
-                atan2(          -xz,            xx),
-                atan2(           xy,      sqrt(kc))
-            )
-        } else if (order == EulerOrder.ZXY) {
-            val kc = yy*yy + yx*yx
-            if (kc == 0f) return EulerAngles(EulerOrder.ZXY, ETA.withSign(yz), 0f, atan2(xy, xx))
+                return EulerAngles(EulerOrder.YZX,
+                    atan2(xx*yz - xz*yx, xx*zz - xz*zx),
+                    atan2(          -xz,            xx),
+                    atan2(           xy,      sqrt(kc)))
+            }
+            EulerOrder.ZXY -> {
+                val kc = yy*yy + yx*yx
+                if (kc == 0f) return EulerAngles(EulerOrder.ZXY, ETA.withSign(yz), 0f, atan2(xy, xx))
 
-            return EulerAngles(
-                EulerOrder.ZXY,
-                atan2(           yz,      sqrt(kc)),
-                atan2(yy*zx - yx*zy, yy*xx - yx*xy),
-                atan2(          -yx,            yy)
-            )
-        } else if (order == EulerOrder.ZYX) {
-            val kc = xy*xy + xx*xx
-            if (kc == 0f) return EulerAngles(EulerOrder.ZYX, 0f, ETA.withSign(-xz), atan2(-yx, yy))
+                return EulerAngles(EulerOrder.ZXY,
+                    atan2(           yz,      sqrt(kc)),
+                    atan2(yy*zx - yx*zy, yy*xx - yx*xy),
+                    atan2(          -yx,            yy))
+            }
+            EulerOrder.ZYX -> {
+                val kc = xy*xy + xx*xx
+                if (kc == 0f) return EulerAngles(EulerOrder.ZYX, 0f, ETA.withSign(-xz), atan2(-yx, yy))
 
-            return EulerAngles(
-                EulerOrder.ZYX,
-                atan2(zx*xy - zy*xx, yy*xx - yx*xy),
-                atan2(          -xz,      sqrt(kc)),
-                atan2(           xy,            xx)
-            )
-        } else if (order == EulerOrder.YXZ) {
-            val kc = zx*zx + zz*zz
-            if (kc == 0f) return EulerAngles(EulerOrder.YXZ, ETA.withSign(-zy), atan2(-xz, xx), 0f)
+                return EulerAngles(EulerOrder.ZYX,
+                    atan2(zx*xy - zy*xx, yy*xx - yx*xy),
+                    atan2(          -xz,      sqrt(kc)),
+                    atan2(           xy,            xx))
+            }
+            EulerOrder.YXZ -> {
+                val kc = zx*zx + zz*zz
+                if (kc == 0f) return EulerAngles(EulerOrder.YXZ, ETA.withSign(-zy), atan2(-xz, xx), 0f)
 
-            return EulerAngles(
-                EulerOrder.YXZ,
-                atan2(          -zy,      sqrt(kc)),
-                atan2(           zx,            zz),
-                atan2(yz*zx - yx*zz, xx*zz - xz*zx)
-            )
-        } else if (order == EulerOrder.XZY) {
-            val kc = yz*yz + yy*yy
-            if (kc == 0f) return EulerAngles(EulerOrder.XZY, atan2(-zy, zz), 0f, ETA.withSign(-yx))
+                return EulerAngles(EulerOrder.YXZ,
+                    atan2(          -zy,      sqrt(kc)),
+                    atan2(           zx,            zz),
+                    atan2(yz*zx - yx*zz, xx*zz - xz*zx))
+            }
+            EulerOrder.XZY -> {
+                val kc = yz*yz + yy*yy
+                if (kc == 0f) return EulerAngles(EulerOrder.XZY, atan2(-zy, zz), 0f, ETA.withSign(-yx))
 
-            return EulerAngles(
-                EulerOrder.XZY,
-                atan2(           yz,            yy),
-                atan2(xy*yz - xz*yy, zz*yy - zy*yz),
-                atan2(          -yx,      sqrt(kc))
-            )
-        } else {
-            throw Exception("EulerAngles not implemented for given EulerOrder")
+                return EulerAngles(EulerOrder.XZY,
+                    atan2(           yz,            yy),
+                    atan2(xy*yz - xz*yy, zz*yy - zy*yz),
+                    atan2(          -yx,      sqrt(kc)))
+            }
+            else -> {
+                throw Exception("EulerAngles not implemented for given EulerOrder")
+            }
         }
     }
 
