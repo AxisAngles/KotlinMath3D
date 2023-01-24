@@ -1,26 +1,3 @@
-/*
- * MIT License
- * Copyright (c) 2022, Donald F Reynolds
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 import kotlin.math.*
 
 /**
@@ -47,7 +24,20 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
 
     constructor(w: Float, xyz: Vector3) : this(w, xyz.x, xyz.y, xyz.z)
 
+    /**
+     * @return the imaginary components as a vector3
+     **/
     val xyz get() = Vector3(x, y, z)
+
+    /**
+     * @return the quaternion with only the w component
+     **/
+    val re get(): Quaternion = Quaternion(w, 0f, 0f, 0f)
+
+    /**
+     * @return the quaternion with only x y z components
+     **/
+    val im get(): Quaternion = Quaternion(0f, x, y, z)
 
     operator fun unaryMinus(): Quaternion = Quaternion(-w, -x, -y, -z)
 
@@ -144,16 +134,6 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
     operator fun div(that: Quaternion): Quaternion = this*that.inv()
 
     /**
-     * @return the quaternion with only the w component
-     **/
-    fun re(): Quaternion = Quaternion(w, 0f, 0f, 0f)
-
-    /**
-     * @return the quaternion with only x y z components
-     **/
-    fun im(): Quaternion = Quaternion(0f, x, y, z)
-
-    /**
      * @return the conjugate of this quaternion
      **/
     fun conj(): Quaternion = Quaternion(w, -x, -y, -z)
@@ -208,7 +188,8 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      **/
     fun pow(t: Float): Quaternion = (log()*t).exp()
 
-
+    // for a slight improvement in performance
+    // not fully implemented
 //    fun pow(t: Float): Quaternion {
 //        val imLen = imLen()
 //        val ang = atan2(imLen, w)
@@ -317,7 +298,7 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * @return angle
      **/
     fun angleAbout(u: Vector3): Float {
-        val uDotIm = x*u.x + y*u.y + z*u.z
+        val uDotIm = u.dot(xyz)
         val uLen = u.len()
         return atan2(uDotIm, uLen*w)
     }
@@ -328,7 +309,7 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * @return angle
      **/
     fun angleAboutR(u: Vector3): Float {
-        val uDotIm = x*u.x + y*u.y + z*u.z
+        val uDotIm = u.dot(xyz)
         val uLen = u.len()
         return if (uDotIm < 0f) {
             2f*atan2(-uDotIm, -uLen*w)

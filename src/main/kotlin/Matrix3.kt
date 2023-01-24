@@ -1,26 +1,3 @@
-/*
- * MIT License
- * Copyright (c) 2022, Donald F Reynolds
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 import kotlin.math.*
 
 data class Matrix3 (
@@ -32,6 +9,14 @@ data class Matrix3 (
         val ZERO = Matrix3(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
         val IDENTITY = Matrix3(1f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 1f)
     }
+
+    /**
+     * creates a new matrix from x y and z column vectors
+     */
+    constructor(x: Vector3, y: Vector3, z: Vector3) : this(
+        x.x, y.x, z.x,
+        x.y, y.y, z.y,
+        x.z, y.z, z.z)
 
     // column getters
     val x get() = Vector3(xx, xy, xz)
