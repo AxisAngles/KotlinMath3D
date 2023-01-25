@@ -17,9 +17,7 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
          * creates a new quaternion representing the rotation about axis v by rotational angle of v's length
          * @return the new quaternion
          **/
-        fun fromRotationVector(v: Vector3): Quaternion {
-            return Quaternion(0f, v/2f).exp()
-        }
+        fun fromRotationVector(v: Vector3): Quaternion = Quaternion(0f, v/2f).exp()
     }
 
     constructor(w: Float, xyz: Vector3) : this(w, xyz.x, xyz.y, xyz.z)
@@ -27,7 +25,7 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
     /**
      * @return the imaginary components as a vector3
      **/
-    val xyz get() = Vector3(x, y, z)
+    val xyz get(): Vector3 = Vector3(x, y, z)
 
     /**
      * @return the quaternion with only the w component
