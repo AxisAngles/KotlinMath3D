@@ -181,6 +181,18 @@ fun testQuaternionProjectAlign() {
     }
 }
 
+fun testQuaternionRotationVector() {
+    for (i in 1..1000) {
+        val Q = randQuaternion().unit()
+        val P = Quaternion.fromRotationVector(Q.toRotationVector())
+
+
+        if (!checkError(5e-7f, Q, P)) {
+            throw Exception("Quaternion toRotationVector fromRotationVector accuracy test failed")
+        }
+    }
+}
+
 fun testEulerSingularity(order: EulerOrder, M: Matrix3, exception: String) {
     for (i in 1..1000) {
         val R = 1e-6f*randMatrix()
@@ -230,6 +242,7 @@ fun main() {
     testQuaternionPow()
     testQuaternionSandwich()
     testQuaternionProjectAlign()
+    testQuaternionRotationVector()
 
     testEulerConversions(EulerOrder.XYZ, "fromEulerAnglesXYZ Quaternion or Matrix3 accuracy test failed")
     testEulerConversions(EulerOrder.YZX, "fromEulerAnglesYZX Quaternion or Matrix3 accuracy test failed")
@@ -318,12 +331,12 @@ fun main() {
 //    println(dtAsinTotal) // 3558
 
 
-    var x = Quaternion(2f, 1f, 4f, 3f)
-    val dtPow = measureTimeMillis {
-        for (i in 1..10_000_000) {
-            x = x.pow(1f)
-        }
-    }
-
-    println(dtPow)
+//    var x = Quaternion(2f, 1f, 4f, 3f)
+//    val dtPow = measureTimeMillis {
+//        for (i in 1..10_000_000) {
+//            x = x.pow(1f)
+//        }
+//    }
+//
+//    println(dtPow)
 }
