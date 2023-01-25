@@ -195,7 +195,7 @@ fun testQuaternionRotationVector() {
 fun testQuaternionEulerAngles(order: EulerOrder, exception: String) {
     for (i in 1..1000) {
         val Q = randQuaternion().unit()
-        val P = Q.toEulerAngles(EulerOrder.XYZ).toQuaternion().twinNearest(Q)
+        val P = Q.toEulerAngles(order).toQuaternion().twinNearest(Q)
 
         if (!checkError(2e-7f, Q, P)) {
             println(relError(Q, P))
