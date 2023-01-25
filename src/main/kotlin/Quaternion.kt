@@ -193,6 +193,13 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
 //    }
 
     /**
+     * between this and -this, picks the one nearest to that
+     * @param that the quaternion to be nearest
+     * @return nearest quaternion
+     **/
+    fun twinNearest(that: Quaternion): Quaternion = if (this.dot(that) < 0f) -this else this
+
+    /**
      * interpolates from this quaternion to that quaternion by t in quaternion space
      * @param that the quaternion to interpolate to
      * @param t the amount to interpolate
@@ -215,12 +222,7 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * @param t the amount to interpolate
      * @return interpolated quaternion
      **/
-    fun interpR(that: Quaternion, t: Float) =
-        if (this.dot(that) < 0f) {
-            this.interp(-that, t)
-        } else {
-            this.interp(that, t)
-        }
+    fun interpR(that: Quaternion, t: Float) = this.interp(that.twinNearest(this), t)
 
     /**
      * linearly interpolates from this quaternion to that quaternion by t in quaternion space
@@ -236,12 +238,7 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * @param t the amount to interpolate
      * @return interpolated quaternion
      **/
-    fun lerpR(that: Quaternion, t: Float) =
-        if (this.dot(that) < 0f) {
-            this.lerp(-that, t)
-        } else {
-            this.lerp(that, t)
-        }
+    fun lerpR(that: Quaternion, t: Float) = this.lerp(that.twinNearest(this), t)
 
     /**
      * computes this quaternion's angle in quaternion space

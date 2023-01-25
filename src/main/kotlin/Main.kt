@@ -186,9 +186,20 @@ fun testQuaternionRotationVector() {
         val Q = randQuaternion().unit()
         val P = Quaternion.fromRotationVector(Q.toRotationVector())
 
-
         if (!checkError(5e-7f, Q, P)) {
             throw Exception("Quaternion toRotationVector fromRotationVector accuracy test failed")
+        }
+    }
+}
+
+fun testQuaternionEulerAngles(order: EulerOrder, exception: String) {
+    for (i in 1..1000) {
+        val Q = randQuaternion().unit()
+        val P = Q.toEulerAngles(EulerOrder.XYZ).toQuaternion().twinNearest(Q)
+
+        if (!checkError(2e-7f, Q, P)) {
+            println(relError(Q, P))
+            throw Exception(exception)
         }
     }
 }
@@ -237,6 +248,13 @@ fun main() {
 
     testMatrixOrthonormalize()
     testQuatMatrixConversion()
+    testQuaternionEulerAngles(EulerOrder.XYZ, "Quaternion EulerAnglesXYZ accuracy test failed")
+    testQuaternionEulerAngles(EulerOrder.YZX, "Quaternion EulerAnglesYZX accuracy test failed")
+    testQuaternionEulerAngles(EulerOrder.ZXY, "Quaternion EulerAnglesZXY accuracy test failed")
+    testQuaternionEulerAngles(EulerOrder.ZYX, "Quaternion EulerAnglesZYX accuracy test failed")
+    testQuaternionEulerAngles(EulerOrder.YXZ, "Quaternion EulerAnglesYXZ accuracy test failed")
+    testQuaternionEulerAngles(EulerOrder.XZY, "Quaternion EulerAnglesXZY accuracy test failed")
+
     testQuaternionInv()
     testQuaternionDiv()
     testQuaternionPow()
