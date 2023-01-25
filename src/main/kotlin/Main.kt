@@ -12,11 +12,12 @@ fun randFloat(): Float {
 }
 
 fun randGaussian(): Float {
-    return sqrt(-2f*ln(1f - randFloat()))*cos(PI.toFloat()*randFloat())
-}
-
-fun randRotMatrix(): Matrix3 {
-    return EulerAngles(EulerOrder.YXZ, 6.28318f*randFloat(), 6.28318f*randFloat(), 6.28318f*randFloat()).toMatrix()
+    var thing = 1f - randFloat()
+    while (thing == 0f) {
+        // no 0s allowed
+        thing = 1f - randFloat()
+    }
+    return sqrt(-2f*ln(thing))*cos(PI.toFloat()*randFloat())
 }
 
 fun randMatrix(): Matrix3 {
@@ -29,6 +30,14 @@ fun randMatrix(): Matrix3 {
 
 fun randQuaternion(): Quaternion {
     return Quaternion(randGaussian(), randGaussian(), randGaussian(), randGaussian())
+}
+
+fun randRotMatrix(): Matrix3 {
+    return randQuaternion().toMatrix()
+}
+
+fun randVector(): Vector3 {
+    return Vector3(randGaussian(), randGaussian(), randGaussian())
 }
 
 fun testEulerMatrix(order: EulerOrder, M: Matrix3, exception: String) {
@@ -70,26 +79,104 @@ fun testQuatMatrixConversion() {
     }
 }
 
-fun testQuaternionArithmetic() {
+fun relError(a: Matrix3, b: Matrix3): Float {
+    val combinedLen = sqrt((a.normSq() + b.normSq())/2f)
+    if (combinedLen == 0f) return 0f
+
+    return (b - a).norm()/combinedLen
+}
+
+fun relError(a: Vector3, b: Vector3): Float {
+    val combinedLen = sqrt((a.lenSq() + b.lenSq())/2f)
+    if (combinedLen == 0f) return 0f
+
+    return (b - a).len()/combinedLen
+}
+
+fun relError(a: Quaternion, b: Quaternion): Float {
+    val combinedLen = sqrt((a.lenSq() + b.lenSq())/2f)
+    if (combinedLen == 0f) return 0f
+
+    return (b - a).len()/combinedLen
+}
+
+fun checkError(eta: Float, a: Matrix3, b: Matrix3): Boolean {
+    return (b - a).normSq() <= eta*eta*(a.normSq() + b.normSq())
+}
+
+fun checkError(eta: Float, a: Quaternion, b: Quaternion): Boolean {
+    return (b - a).lenSq() <= eta*eta*(a.lenSq() + b.lenSq())
+}
+
+fun checkError(eta: Float, a: Vector3, b: Vector3): Boolean {
+    return (b - a).lenSq() <= eta*eta*(a.lenSq() + b.lenSq())
+}
+
+fun checkError(eta: Float, A: Quaternion): Boolean {
+    return A.lenSq() <= eta*eta
+}
+
+fun testQuaternionInv() {
     for (i in 1..1000) {
         val Q = randQuaternion()
-        val A = Q*Q.inv() - Quaternion.ONE
-        val B = Q.pow(-1f) - Q.inv()
-        val C = Q.pow(1f) - Q
-        val D = Q.pow(2f) - Q*Q
-        val E = 1f/Q - Q.inv()
-        val F = Q/Q - Quaternion.ONE
-        if (A.len() > 1e-6) {
+
+        if (relError(Q*Q.inv(), Quaternion.ONE) > 1e-6f)
             throw Exception("Quaternion inv accuracy test failed")
-        }
-        if (B.len() > 1e-5 || C.len() > 1e-5 || D.len() > 1e-5) {
-            throw Exception("Quaternion pow accuracy test failed")
-        }
-        if (E.len() > 1e-6) {
+    }
+}
+
+fun testQuaternionDiv() {
+    for (i in 1..1000) {
+        val Q = randQuaternion()
+
+        if (!checkError(1e-6f, Q/Q, Quaternion.ONE))
+            throw Exception("Quaternion div accuracy test failed")
+        if (!checkError(1e-6f, 2f/Q, 2f*Q.inv()))
             throw Exception("Float/Quaternion accuracy test failed")
-        }
-        if (F.len() > 1e-6) {
-            throw Exception("Quaternion/Quaternion accuracy test failed")
+        if (!checkError(1e-6f, Q/2f, 0.5f*Q))
+            throw Exception("Quaternion/Float accuracy test failed")
+    }
+}
+
+// 19 binary digits of accuracy
+fun testQuaternionPow() {
+    for (i in 1..1000) {
+        val Q = randQuaternion()
+
+        if (!checkError(2e-6f, Q.pow(-1f), Q.inv()))
+            throw Exception("Quaternion pow -1 accuracy test failed")
+        if (!checkError(2e-6f, Q.pow(0f), Quaternion.ONE))
+            throw Exception("Quaternion pow 0 accuracy test failed")
+        if (!checkError(2e-6f, Q.pow(1f), Q))
+            throw Exception("Quaternion pow 1 accuracy test failed")
+        if (!checkError(2e-6f, Q.pow(2f), Q*Q))
+            throw Exception("Quaternion pow 2 accuracy test failed")
+    }
+}
+
+fun testQuaternionSandwich() {
+    for (i in 1..1000) {
+        val Q = randQuaternion()
+        val v = randVector()
+
+        if (!checkError(5e-7f, Q.toMatrix()*v, Q.sandwich(v)))
+            throw Exception("Quaternion sandwich accuracy test failed")
+    }
+}
+
+// projection and alignment are expected to be less accurate in some extreme cases
+// so we expect to see some cases in which half the bits are lost
+fun testQuaternionProjectAlign() {
+    for (i in 1..1000) {
+        val Q = randQuaternion()
+        val v = randVector()
+
+        if (!checkError(1e-4f, Q.align(v, v), Q.project(v))) {
+            println(Q.align(v, v) - Q.project(v))
+            println(Q.align(v, v))
+            println(Q.project(v))
+            println(Q)
+            throw Exception("Quaternion project/align accuracy test failed")
         }
     }
 }
@@ -138,7 +225,11 @@ fun main() {
 
     testMatrixOrthonormalize()
     testQuatMatrixConversion()
-    testQuaternionArithmetic()
+    testQuaternionInv()
+    testQuaternionDiv()
+    testQuaternionPow()
+    testQuaternionSandwich()
+    testQuaternionProjectAlign()
 
     testEulerConversions(EulerOrder.XYZ, "fromEulerAnglesXYZ Quaternion or Matrix3 accuracy test failed")
     testEulerConversions(EulerOrder.YZX, "fromEulerAnglesYZX Quaternion or Matrix3 accuracy test failed")
@@ -164,64 +255,65 @@ fun main() {
     testEulerSingularity(EulerOrder.XZY, Z90, "toEulerAnglesXZY singularity accuracy test failed")
 
 
+
     // speed test a linear (align) method against some standard math functions
-    var x = Quaternion(1f, 2f, 3f, 4f)
-
-    var dtAlignTotal: Long = 0
-    var dtOrthonormalizeTotal: Long = 0
-    var dtAtan2Total: Long = 0
-    var dtAsinTotal: Long = 0
-
-    for (i in 1..10) {
-        val dtAlign = measureTimeMillis {
-            for (i in 1..1_000_000) {
-                val u = Vector3(1f, 0f, 0f)
-                val v = Vector3(0f, 1f, 0f)
-                // to make sure it is not optimized away
-                x = x.align(u, v)
-                //            internally, x.align is:
-                //            val U = Quaternion(0f, u)
-                //            val V = Quaternion(0f, v)
-                //            x = (V*x/U + (V/U).len()*x)/2f
-            }
-        }
-
-        var y = x.toMatrix()
-        val dtOrthonormalize = measureTimeMillis {
-            for (i in 1..1_000_000) {
-                // to make sure it is not optimized away
-                y = y.orthonormalize()
-                //            internally, x.align is:
-                //            val U = Quaternion(0f, u)
-                //            val V = Quaternion(0f, v)
-                //            x = (V*x/U + (V/U).len()*x)/2f
-            }
-        }
-
-        var z = 0f;
-        val dtAtan2 = measureTimeMillis {
-            for (i in 1..1_000_000) {
-                z+= atan2(i.toFloat(), i.toFloat()) // 45 degrees
-            }
-        }
-
-        var w = 0f;
-        val dtAsin = measureTimeMillis {
-            for (i in 1..1_000_000) {
-                w+= asin(i.toFloat()*0.7071f/i.toFloat()) // 45 degrees
-            }
-        }
-
-        dtAlignTotal += dtAlign
-        dtOrthonormalizeTotal += dtOrthonormalize
-        dtAtan2Total += dtAtan2
-        dtAsinTotal += dtAsin
-    }
-
-    println(x)
-
-    println(dtAlignTotal) // 213
-    println(dtOrthonormalizeTotal) // 244
-    println(dtAtan2Total) // 610
-    println(dtAsinTotal) // 3558
+//    var x = Quaternion(1f, 2f, 3f, 4f)
+//
+//    var dtAlignTotal: Long = 0
+//    var dtOrthonormalizeTotal: Long = 0
+//    var dtAtan2Total: Long = 0
+//    var dtAsinTotal: Long = 0
+//
+//    for (i in 1..10) {
+//        val dtAlign = measureTimeMillis {
+//            for (i in 1..1_000_000) {
+//                val u = Vector3(1f, 0f, 0f)
+//                val v = Vector3(0f, 1f, 0f)
+//                // to make sure it is not optimized away
+//                x = x.align(u, v)
+//                //            internally, x.align is:
+//                //            val U = Quaternion(0f, u)
+//                //            val V = Quaternion(0f, v)
+//                //            x = (V*x/U + (V/U).len()*x)/2f
+//            }
+//        }
+//
+//        var y = x.toMatrix()
+//        val dtOrthonormalize = measureTimeMillis {
+//            for (i in 1..1_000_000) {
+//                // to make sure it is not optimized away
+//                y = y.orthonormalize()
+//                //            internally, x.align is:
+//                //            val U = Quaternion(0f, u)
+//                //            val V = Quaternion(0f, v)
+//                //            x = (V*x/U + (V/U).len()*x)/2f
+//            }
+//        }
+//
+//        var z = 0f;
+//        val dtAtan2 = measureTimeMillis {
+//            for (i in 1..1_000_000) {
+//                z+= atan2(i.toFloat(), i.toFloat()) // 45 degrees
+//            }
+//        }
+//
+//        var w = 0f;
+//        val dtAsin = measureTimeMillis {
+//            for (i in 1..1_000_000) {
+//                w+= asin(i.toFloat()*0.7071f/i.toFloat()) // 45 degrees
+//            }
+//        }
+//
+//        dtAlignTotal += dtAlign
+//        dtOrthonormalizeTotal += dtOrthonormalize
+//        dtAtan2Total += dtAtan2
+//        dtAsinTotal += dtAsin
+//    }
+//
+//    println(x)
+//
+//    println(dtAlignTotal) // 213
+//    println(dtOrthonormalizeTotal) // 244
+//    println(dtAtan2Total) // 610
+//    println(dtAsinTotal) // 3558
 }
