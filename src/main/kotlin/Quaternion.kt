@@ -241,13 +241,13 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
     fun lerpR(that: Quaternion, t: Float) = this.lerp(that.twinNearest(this), t)
 
     /**
-     * computes this quaternion's angle in quaternion space
+     * computes this quaternion's angle to identity in quaternion space
      * @return angle
      **/
     fun angle(): Float = atan2(xyz.len(), w)
 
     /**
-     * computes this quaternion's angle in rotation space
+     * computes this quaternion's angle to identity in rotation space
      * @return angle
      **/
     fun angleR(): Float = 2f*atan2(xyz.len(), abs(w))
