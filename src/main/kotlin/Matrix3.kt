@@ -150,6 +150,23 @@ data class Matrix3 (
     }
 
     /**
+     * finds the rotation matrix closest to all given rotation matrices.
+     * multiply input matrices by a weight for weighted averaging.
+     * WARNING: NOT ANGULAR
+     * @param others a variable number of additional matrices to average
+     * @return the average rotation matrix
+     */
+    fun average(vararg others: Matrix3): Matrix3 {
+        var count = 1f
+        var sum = this
+        others.forEach {
+            count += 1f
+            sum += it
+        }
+        return (sum/count).orthonormalize()
+    }
+
+    /**
      * linearly interpolates this matrix to that matrix by t
      * @param that the matrix towards which to interpolate
      * @param t the amount by which to interpolate
@@ -341,23 +358,6 @@ data class Matrix3 (
      * @return the eulerAngles
      */
     fun toEulerAngles(order: EulerOrder): EulerAngles = orthonormalize().toEulerAnglesAssumingOrthonormal(order)
-
-    /**
-     * finds the rotation matrix closest to all given rotation matrices.
-     * multiply input matrices by a weight for weighted averaging.
-     * WARNING: NOT ANGULAR
-     * @param Qs a variable number of additional matrices to average
-     * @return the average rotation matrix
-     */
-    fun average(vararg Qs: Matrix3): Matrix3 {
-        var count = 1f
-        var sum = this
-        Qs.forEach {
-            count += 1f
-            sum += it
-        }
-        return (sum/count).orthonormalize()
-    }
 }
 
 operator fun Float.times(that: Matrix3): Matrix3 = that*this

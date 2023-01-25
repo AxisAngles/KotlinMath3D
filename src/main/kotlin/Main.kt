@@ -262,6 +262,8 @@ fun main() {
     testQuaternionProjectAlign()
     testQuaternionRotationVector()
 
+    println(Matrix3.IDENTITY.average(Y90))
+
     testEulerConversions(EulerOrder.XYZ, "fromEulerAnglesXYZ Quaternion or Matrix3 accuracy test failed")
     testEulerConversions(EulerOrder.YZX, "fromEulerAnglesYZX Quaternion or Matrix3 accuracy test failed")
     testEulerConversions(EulerOrder.ZXY, "fromEulerAnglesZXY Quaternion or Matrix3 accuracy test failed")
