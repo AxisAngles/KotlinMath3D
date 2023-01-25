@@ -79,18 +79,6 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
     fun len(): Float = sqrt(w*w + x*x + y*y + z*z)
 
     /**
-     * computes the square of the length of this quaternion's imaginary part
-     * @return the length squared
-     **/
-    fun imLenSq(): Float = x*x + y*y + z*z
-
-    /**
-     * computes the length of this quaternion's imaginary part
-     * @return the length
-     **/
-    fun imLen(): Float = sqrt(x*x + y*y + z*z)
-
-    /**
      * @return the normalized quaternion
      **/
     fun unit(): Quaternion {
@@ -143,19 +131,20 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * @return the log of this quaternion
      **/
     fun log(): Quaternion {
-        val imLen = imLen()
+        val co = w
+        val si = xyz.len()
         val len = len()
 
-        if (imLen == 0f) {
+        if (si == 0f) {
             return Quaternion(ln(len), x/w, y/w, z/w)
         }
 
-        val ang = atan2(imLen, w)
+        val ang = atan2(si, co)
         return Quaternion(
             ln(len),
-            ang/imLen*x,
-            ang/imLen*y,
-            ang/imLen*z
+            ang/si*x,
+            ang/si*y,
+            ang/si*z
         )
     }
 
@@ -164,7 +153,7 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * @return the exponentiated quaternion
      **/
     fun exp(): Quaternion {
-        val ang = imLen()
+        val ang = xyz.len()
         val len = exp(w)
 
         if (ang == 0f) {
@@ -270,13 +259,13 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * computes this quaternion's angle in quaternion space
      * @return angle
      **/
-    fun angle(): Float = atan2(imLen(), w)
+    fun angle(): Float = atan2(xyz.len(), w)
 
     /**
      * computes this quaternion's angle in rotation space
      * @return angle
      **/
-    fun angleR(): Float = 2f* atan2(imLen(), abs(w))
+    fun angleR(): Float = 2f* atan2(xyz.len(), abs(w))
 
     /**
      * computes the angle between this quaternion and that quaternion in quaternion space
