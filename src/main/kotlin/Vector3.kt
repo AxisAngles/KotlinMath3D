@@ -3,6 +3,7 @@ import kotlin.math.sqrt
 
 data class Vector3(val x: Float, val y: Float, val z: Float) {
     companion object {
+        val ZERO =  Vector3( 0f,  0f,  0f)
         val POS_X = Vector3( 1f,  0f,  0f)
         val POS_Y = Vector3( 0f,  1f,  0f)
         val POS_Z = Vector3( 0f,  0f,  1f)
@@ -57,7 +58,10 @@ data class Vector3(val x: Float, val y: Float, val z: Float) {
     /**
      * @return the normalized vector
      **/
-    fun unit() = this/len()
+    fun unit(): Vector3 {
+        val m = len()
+        return if (m == 0f) ZERO else this/m
+    }
 
     operator fun times(that: Float) = Vector3(
         this.x*that,
