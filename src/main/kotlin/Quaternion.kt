@@ -18,7 +18,7 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
          * @return the new quaternion
          **/
         fun fromRotationVector(v: Vector3): Quaternion {
-            return Quaternion(0f, v.x/2f, v.y/2f, v.z/2f).exp()
+            return Quaternion(0f, v/2f).exp()
         }
     }
 
@@ -265,7 +265,7 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * computes this quaternion's angle in rotation space
      * @return angle
      **/
-    fun angleR(): Float = 2f* atan2(xyz.len(), abs(w))
+    fun angleR(): Float = 2f*atan2(xyz.len(), abs(w))
 
     /**
      * computes the angle between this quaternion and that quaternion in quaternion space
@@ -313,10 +313,10 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
      * @param v the global axis
      * @return Q
      **/
-    fun project(v: Vector3) = Quaternion(w, xyz.dot(v)*v/v.lenSq())
+    fun project(v: Vector3) = Quaternion(w, xyz.dot(v)/v.lenSq()*v)
 
     /**
-     * finds Q, the quaternion nearest to this quaternion representing a rotation NOT on the global u axis
+     * finds Q, the quaternion nearest to this quaternion representing a rotation NOT on the global u axis.
      * Q is NOT unitized
      * @param v the global axis
      * @return Q
