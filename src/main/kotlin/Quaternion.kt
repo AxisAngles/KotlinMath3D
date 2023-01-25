@@ -134,16 +134,11 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
         val len = len()
 
         if (si == 0f) {
-            return Quaternion(ln(len), x/w, y/w, z/w)
+            return Quaternion(ln(len), xyz/w)
         }
 
         val ang = atan2(si, co)
-        return Quaternion(
-            ln(len),
-            ang/si*x,
-            ang/si*y,
-            ang/si*z
-        )
+        return Quaternion(ln(len), ang/si*xyz)
     }
 
     /**
@@ -155,17 +150,12 @@ data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
         val len = exp(w)
 
         if (ang == 0f) {
-            return Quaternion(len, len*x, len*y, len*z)
+            return Quaternion(len, len*xyz)
         }
 
         val co = cos(ang)
         val si = sin(ang)
-        return Quaternion(
-            len*co,
-            len*si/ang*x,
-            len*si/ang*y,
-            len*si/ang*z
-        )
+        return Quaternion(len*co, len*si/ang*xyz)
     }
 
     /**

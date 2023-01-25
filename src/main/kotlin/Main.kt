@@ -316,4 +316,14 @@ fun main() {
 //    println(dtOrthonormalizeTotal) // 244
 //    println(dtAtan2Total) // 610
 //    println(dtAsinTotal) // 3558
+
+
+    var x = Quaternion(2f, 1f, 4f, 3f)
+    val dtPow = measureTimeMillis {
+        for (i in 1..10_000_000) {
+            x = x.pow(1f)
+        }
+    }
+
+    println(dtPow)
 }
