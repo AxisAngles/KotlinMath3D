@@ -167,13 +167,13 @@ data class Matrix3 (
             throw Exception("Attempt to convert negative determinant matrix to quaternion")
 
         return if (yy > -zz && zz > -xx && xx > -yy) {
-            Quaternion(1 + xx + yy + zz, yz - zy, zx - xz, xy - yx)
+            Quaternion(1 + xx + yy + zz, yz - zy, zx - xz, xy - yx).unit()
         } else if (xx > yy && xx > zz) {
-            Quaternion(yz - zy, 1 + xx - yy - zz, xy + yx, xz + zx)
+            Quaternion(yz - zy, 1 + xx - yy - zz, xy + yx, xz + zx).unit()
         } else if (yy > zz) {
-            Quaternion(zx - xz, xy + yx, 1 - xx + yy - zz, yz + zy)
+            Quaternion(zx - xz, xy + yx, 1 - xx + yy - zz, yz + zy).unit()
         } else {
-            Quaternion(xy - yx, xz + zx, yz + zy, 1 - xx - yy + zz)
+            Quaternion(xy - yx, xz + zx, yz + zy, 1 - xx - yy + zz).unit()
         }
     }
 
