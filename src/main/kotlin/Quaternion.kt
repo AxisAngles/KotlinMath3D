@@ -1,368 +1,408 @@
+@file:Suppress("unused")
+
+package io.github.axisangles.ktmath
+
 import kotlin.math.*
 
-/**
- * A Quaternion class properly implementing Quaternions as a real component and 3 imaginary components
- * All operations are well-defined
- */
 data class Quaternion(val w: Float, val x: Float, val y: Float, val z: Float) {
-    companion object {
-        val ZERO = Quaternion(0f, 0f, 0f, 0f)
-        val ONE = Quaternion(1f, 0f, 0f, 0f)
-        val I = Quaternion(0f, 1f, 0f, 0f)
-        val J = Quaternion(0f, 0f, 1f, 0f)
-        val K = Quaternion(0f, 0f, 0f, 1f)
+	companion object {
+		val NULL = Quaternion(0f, 0f, 0f, 0f)
+		val IDENTITY = Quaternion(1f, 0f, 0f, 0f)
+		val I = Quaternion(0f, 1f, 0f, 0f)
+		val J = Quaternion(0f, 0f, 1f, 0f)
+		val K = Quaternion(0f, 0f, 0f, 1f)
 
-        // creates a new quaternion representing the rotation about axis v by rotational angle v
-        /**
-         * creates a new quaternion representing the rotation about axis v by rotational angle of v's length
-         * @return the new quaternion
-         **/
-        fun fromRotationVector(v: Vector3): Quaternion = Quaternion(0f, v/2f).exp()
-    }
+		/**
+		 * SlimeVR-specific constants and utils
+		 */
+		val SLIMEVR: SlimeVR = SlimeVR
 
-    constructor(w: Float, xyz: Vector3) : this(w, xyz.x, xyz.y, xyz.z)
+		/**
+		 * creates a new quaternion representing the rotation about v's axis
+		 * by an angle of v's length
+		 * @param v the rotation vector
+		 * @return the new quaternion
+		 **/
+		fun fromRotationVector(v: Vector3): Quaternion = Quaternion(0f, v / 2f).exp()
 
-    /**
-     * @return the imaginary components as a vector3
-     **/
-    val xyz get(): Vector3 = Vector3(x, y, z)
+		/**
+		 * creates a new quaternion representing the rotation about axis v
+		 * by an angle of v's length
+		 * @param vx the rotation vector's x component
+		 * @param vy the rotation vector's y component
+		 * @param vz the rotation vector's z component
+		 * @return the new quaternion
+		 **/
+		fun fromRotationVector(vx: Float, vy: Float, vz: Float): Quaternion =
+			fromRotationVector(Vector3(vx, vy, vz))
 
-    /**
-     * @return the quaternion with only the w component
-     **/
-    val re get(): Quaternion = Quaternion(w, 0f, 0f, 0f)
+		/**
+		 * finds Q, the smallest-angled quaternion whose local u direction aligns with
+		 * the global v direction.
+		 * @param u the local direction
+		 * @param v the global direction
+		 * @return Q
+		 **/
+		fun fromTo(u: Vector3, v: Vector3): Quaternion {
+			val U = Quaternion(0f, u)
+			val V = Quaternion(0f, v)
+			val D = V / U
 
-    /**
-     * @return the quaternion with only x y z components
-     **/
-    val im get(): Quaternion = Quaternion(0f, x, y, z)
+			return (D + D.len()).unit()
+		}
 
-    operator fun unaryMinus(): Quaternion = Quaternion(-w, -x, -y, -z)
+		/**
+		 * SlimeVR-specific constants and utils
+		 */
+		object SlimeVR {
+			val FRONT = Quaternion(0f, 0f, 1f, 0f)
+			val FRONT_LEFT = Quaternion(0.383f, 0f, 0.924f, 0f)
+			val LEFT = Quaternion(0.707f, 0f, 0.707f, 0f)
+			val BACK_LEFT = Quaternion(0.924f, 0f, 0.383f, 0f)
+			val FRONT_RIGHT = Quaternion(0.383f, 0f, -0.924f, 0f)
+			val RIGHT = Quaternion(0.707f, 0f, -0.707f, 0f)
+			val BACK_RIGHT = Quaternion(0.924f, 0f, -0.383f, 0f)
+			val BACK = Quaternion(1f, 0f, 0f, 0f)
+		}
+	}
 
-    operator fun plus(that: Quaternion): Quaternion = Quaternion(
-        this.w + that.w,
-        this.x + that.x,
-        this.y + that.y,
-        this.z + that.z
-    )
+	/**
+	 * @return the quaternion with w real component and xyz imaginary components
+	 */
+	constructor(w: Float, xyz: Vector3) : this(w, xyz.x, xyz.y, xyz.z)
 
-    operator fun plus(that: Float): Quaternion = Quaternion(this.w + that, this.x, this.y, this.z)
+	/**
+	 * @return the imaginary components as a vector3
+	 **/
+	val xyz get(): Vector3 = Vector3(x, y, z)
 
-    operator fun minus(that: Quaternion): Quaternion = Quaternion(
-        this.w - that.w,
-        this.x - that.x,
-        this.y - that.y,
-        this.z - that.z
-    )
+	/**
+	 * @return the quaternion with only the w component
+	 **/
+	val re get(): Quaternion = Quaternion(w, 0f, 0f, 0f)
 
-    operator fun minus(that: Float): Quaternion = Quaternion(this.w - that, this.x, this.y, this.z)
+	/**
+	 * @return the quaternion with only x y z components
+	 **/
+	val im get(): Quaternion = Quaternion(0f, x, y, z)
 
-    /**
-     * computes the dot product of this quaternion with that quaternion
-     * @param that the quaternion with which to be dotted
-     * @return the inversed quaternion
-     **/
-    fun dot(that: Quaternion): Float = this.w*that.w + this.x*that.x + this.y*that.y + this.z*that.z
+	operator fun unaryMinus(): Quaternion = Quaternion(-w, -x, -y, -z)
 
-    /**
-     * computes the square of the length of this quaternion
-     * @return the length squared
-     **/
-    fun lenSq(): Float = w*w + x*x + y*y + z*z
+	operator fun plus(that: Quaternion): Quaternion = Quaternion(
+		this.w + that.w,
+		this.x + that.x,
+		this.y + that.y,
+		this.z + that.z
+	)
 
-    /**
-     * computes the length of this quaternion
-     * @return the length
-     **/
-    fun len(): Float = sqrt(w*w + x*x + y*y + z*z)
+	operator fun plus(that: Float): Quaternion =
+		Quaternion(this.w + that, this.x, this.y, this.z)
 
-    /**
-     * @return the normalized quaternion
-     **/
-    fun unit(): Quaternion {
-        val m = len()
-        return if (m == 0f) ZERO else this/m
-    }
+	operator fun minus(that: Quaternion): Quaternion = Quaternion(
+		this.w - that.w,
+		this.x - that.x,
+		this.y - that.y,
+		this.z - that.z
+	)
 
-    operator fun times(that: Float): Quaternion = Quaternion(
-        this.w*that,
-        this.x*that,
-        this.y*that,
-        this.z*that
-    )
+	operator fun minus(that: Float): Quaternion =
+		Quaternion(this.w - that, this.x, this.y, this.z)
 
-    operator fun times(that: Quaternion): Quaternion = Quaternion(
-        this.w*that.w - this.x*that.x - this.y*that.y - this.z*that.z,
-        this.x*that.w + this.w*that.x - this.z*that.y + this.y*that.z,
-        this.y*that.w + this.z*that.x + this.w*that.y - this.x*that.z,
-        this.z*that.w - this.y*that.x + this.x*that.y + this.w*that.z
-    )
+	/**
+	 * computes the dot product of this quaternion with that quaternion
+	 * @param that the quaternion with which to be dotted
+	 * @return the inverse quaternion
+	 **/
+	fun dot(that: Quaternion): Float =
+		this.w * that.w + this.x * that.x + this.y * that.y + this.z * that.z
 
-    /**
-     * computes the inverse of this quaternion
-     * @return the inversed quaternion
-     **/
-    fun inv(): Quaternion {
-        val lenSq = lenSq()
-        return Quaternion(
-            w/lenSq,
-            -x/lenSq,
-            -y/lenSq,
-            -z/lenSq
-        )
-    }
+	/**
+	 * computes the square of the length of this quaternion
+	 * @return the length squared
+	 **/
+	fun lenSq(): Float = w * w + x * x + y * y + z * z
 
-    operator fun div(that: Float): Quaternion = this*(1f/that)
+	/**
+	 * computes the length of this quaternion
+	 * @return the length
+	 **/
+	fun len(): Float = sqrt(w * w + x * x + y * y + z * z)
 
-    /**
-     * computes right division, this * that^-1
-     **/
-    operator fun div(that: Quaternion): Quaternion = this*that.inv()
+	/**
+	 * @return the normalized quaternion
+	 **/
+	fun unit(): Quaternion {
+		val m = len()
+		return if (m == 0f) NULL else (this / m)
+	}
 
-    /**
-     * @return the conjugate of this quaternion
-     **/
-    fun conj(): Quaternion = Quaternion(w, -x, -y, -z)
+	operator fun times(that: Float): Quaternion = Quaternion(
+		this.w * that,
+		this.x * that,
+		this.y * that,
+		this.z * that
+	)
 
-    /**
-     * computes the logarithm of this quaternion
-     * @return the log of this quaternion
-     **/
-    fun log(): Quaternion {
-        val co = w
-        val si = xyz.len()
-        val len = len()
+	operator fun times(that: Quaternion): Quaternion = Quaternion(
+		this.w * that.w - this.x * that.x - this.y * that.y - this.z * that.z,
+		this.x * that.w + this.w * that.x - this.z * that.y + this.y * that.z,
+		this.y * that.w + this.z * that.x + this.w * that.y - this.x * that.z,
+		this.z * that.w - this.y * that.x + this.x * that.y + this.w * that.z
+	)
 
-        if (si == 0f) {
-            return Quaternion(ln(len), xyz/w)
-        }
+	/**
+	 * computes the inverse of this quaternion
+	 * @return the inverse quaternion
+	 **/
+	fun inv(): Quaternion {
+		val lenSq = lenSq()
+		return Quaternion(
+			w / lenSq,
+			-x / lenSq,
+			-y / lenSq,
+			-z / lenSq
+		)
+	}
 
-        val ang = atan2(si, co)
-        return Quaternion(ln(len), ang/si*xyz)
-    }
+	operator fun div(that: Float): Quaternion = this * (1f / that)
 
-    /**
-     * raises e to the power of this quaternion
-     * @return the exponentiated quaternion
-     **/
-    fun exp(): Quaternion {
-        val ang = xyz.len()
-        val len = exp(w)
+	/**
+	 * computes right division, this * that^-1
+	 **/
+	operator fun div(that: Quaternion): Quaternion = this * that.inv()
 
-        if (ang == 0f) {
-            return Quaternion(len, len*xyz)
-        }
+	/**
+	 * @return the conjugate of this quaternion
+	 **/
+	fun conj(): Quaternion = Quaternion(w, -x, -y, -z)
 
-        val co = cos(ang)
-        val si = sin(ang)
-        return Quaternion(len*co, len*si/ang*xyz)
-    }
+	/**
+	 * computes the logarithm of this quaternion
+	 * @return the log of this quaternion
+	 **/
+	fun log(): Quaternion {
+		val co = w
+		val si = xyz.len()
+		val len = len()
 
-    /**
-     * raises this quaternion to the power of t
-     * @param t the power by which to raise this quaternion
-     * @return the powered quaternion
-     **/
-    fun pow(t: Float): Quaternion = (log()*t).exp()
+		if (si == 0f) {
+			return Quaternion(ln(len), xyz / w)
+		}
 
-    // for a slight improvement in performance
-    // not fully implemented
-//    fun pow(t: Float): Quaternion {
-//        val imLen = imLen()
-//        val ang = atan2(imLen, w)
-//
-//        val len = len().pow(t)
-//        val co = cos(t*ang)
-//        val si = sin(t*ang)
-//
-//        return if (imLen == 0f) {
-//            Quaternion(
-//                len*co,
-//                len*t*x,
-//                len*t*y,
-//                len*t*z
-//            )
-//        } else {
-//            Quaternion(
-//                len*co,
-//                len*si*x/imLen,
-//                len*si*y/imLen,
-//                len*si*z/imLen
-//            )
-//        }
-//    }
+		val ang = atan2(si, co)
+		return Quaternion(ln(len), ang / si * xyz)
+	}
 
-    /**
-     * between this and -this, picks the one nearest to that
-     * @param that the quaternion to be nearest
-     * @return nearest quaternion
-     **/
-    fun twinNearest(that: Quaternion): Quaternion = if (this.dot(that) < 0f) -this else this
+	/**
+	 * raises e to the power of this quaternion
+	 * @return the exponentiated quaternion
+	 **/
+	fun exp(): Quaternion {
+		val ang = xyz.len()
+		val len = exp(w)
 
-    /**
-     * interpolates from this quaternion to that quaternion by t in quaternion space
-     * @param that the quaternion to interpolate to
-     * @param t the amount to interpolate
-     * @return interpolated quaternion
-     **/
-    fun interp(that: Quaternion, t: Float) =
-        if (t == 0f) {
-            this
-        } else if (t == 1f) {
-            that
-        } else if (t < 0.5f) {
-            (that/this).pow(t)*this
-        } else {
-            (this/that).pow(1f - t)*that
-        }
+		if (ang == 0f) {
+			return Quaternion(len, len * xyz)
+		}
 
-    /**
-     * interpolates from this quaternion to that quaternion by t in rotation space
-     * @param that the quaternion to interpolate to
-     * @param t the amount to interpolate
-     * @return interpolated quaternion
-     **/
-    fun interpR(that: Quaternion, t: Float) = this.interp(that.twinNearest(this), t)
+		val co = cos(ang)
+		val si = sin(ang)
+		return Quaternion(len * co, len * si / ang * xyz)
+	}
 
-    /**
-     * linearly interpolates from this quaternion to that quaternion by t in quaternion space
-     * @param that the quaternion to interpolate to
-     * @param t the amount to interpolate
-     * @return interpolated quaternion
-     **/
-    fun lerp(that: Quaternion, t: Float): Quaternion = (1f - t)*this + t*that
+	/**
+	 * raises this quaternion to the power of t
+	 * @param t the power by which to raise this quaternion
+	 * @return the powered quaternion
+	 **/
+	fun pow(t: Float): Quaternion = (log() * t).exp()
 
-    /**
-     * linearly interpolates from this quaternion to that quaternion by t in rotation space
-     * @param that the quaternion to interpolate to
-     * @param t the amount to interpolate
-     * @return interpolated quaternion
-     **/
-    fun lerpR(that: Quaternion, t: Float) = this.lerp(that.twinNearest(this), t)
+	/**
+	 * between this and -this, picks the one nearest to that quaternion
+	 * @param that the quaternion to be nearest
+	 * @return nearest quaternion
+	 **/
+	fun twinNearest(that: Quaternion): Quaternion =
+		if (this.dot(that) < 0f) -this else this
 
-    /**
-     * computes this quaternion's angle to identity in quaternion space
-     * @return angle
-     **/
-    fun angle(): Float = atan2(xyz.len(), w)
+	/**
+	 * interpolates from this quaternion to that quaternion by t in quaternion space
+	 * @param that the quaternion to interpolate to
+	 * @param t the amount to interpolate
+	 * @return interpolated quaternion
+	 **/
+	fun interpQ(that: Quaternion, t: Float) =
+		if (t == 0f) {
+			this
+		} else if (t == 1f) {
+			that
+		} else if (t < 0.5f) {
+			(that / this).pow(t) * this
+		} else {
+			(this / that).pow(1f - t) * that
+		}
 
-    /**
-     * computes this quaternion's angle to identity in rotation space
-     * @return angle
-     **/
-    fun angleR(): Float = 2f*atan2(xyz.len(), abs(w))
+	/**
+	 * interpolates from this quaternion to that quaternion by t in rotation space
+	 * @param that the quaternion to interpolate to
+	 * @param t the amount to interpolate
+	 * @return interpolated quaternion
+	 **/
+	fun interpR(that: Quaternion, t: Float) = this.interpQ(that.twinNearest(this), t)
 
-    /**
-     * computes the angle between this quaternion and that quaternion in quaternion space
-     * @param that the other quaternion
-     * @return angle
-     **/
-    fun angleTo(that: Quaternion): Float = (this/that).angle()
+	/**
+	 * linearly interpolates from this quaternion to that quaternion by t in
+	 * quaternion space
+	 * @param that the quaternion to interpolate to
+	 * @param t the amount to interpolate
+	 * @return interpolated quaternion
+	 **/
+	fun lerpQ(that: Quaternion, t: Float): Quaternion = (1f - t) * this + t * that
 
-    /**
-     * computes the angle between this quaternion and that quaternion in rotation space
-     * @param that the other quaternion
-     * @return angle
-     **/
-    fun angleToR(that: Quaternion): Float = (this/that).angleR()
+	/**
+	 * linearly interpolates from this quaternion to that quaternion by t in
+	 * rotation space
+	 * @param that the quaternion to interpolate to
+	 * @param t the amount to interpolate
+	 * @return interpolated quaternion
+	 **/
+	fun lerpR(that: Quaternion, t: Float) = this.lerpQ(that.twinNearest(this), t)
 
-    /**
-     * computes the angle this quaternion rotates about the u axis in quaternion space
-     * @param u the axis
-     * @return angle
-     **/
-    fun angleAbout(u: Vector3): Float {
-        val uDotIm = u.dot(xyz)
-        val uLen = u.len()
-        return atan2(uDotIm, uLen*w)
-    }
+	/**
+	 * computes this quaternion's angle to identity in quaternion space
+	 * @return angle
+	 **/
+	fun angleQ(): Float = atan2(xyz.len(), w)
 
-    /**
-     * computes the angle this quaternion rotates about the u axis in rotation space
-     * @param u the axis
-     * @return angle
-     **/
-    fun angleAboutR(u: Vector3): Float {
-        val uDotIm = u.dot(xyz)
-        val uLen = u.len()
-        return if (uDotIm < 0f) {
-            2f*atan2(-uDotIm, -uLen*w)
-        } else {
-            2f*atan2(uDotIm, uLen*w)
-        }
-    }
+	/**
+	 * computes this quaternion's angle to identity in rotation space
+	 * @return angle
+	 **/
+	fun angleR(): Float = 2f * atan2(xyz.len(), abs(w))
 
-    /**
-     * finds Q, the quaternion nearest to this quaternion representing a rotation purely about the global u axis
-     * Q is NOT unitized
-     * @param v the global axis
-     * @return Q
-     **/
-    fun project(v: Vector3) = Quaternion(w, xyz.dot(v)/v.lenSq()*v)
+	/**
+	 * computes the angle between this quaternion and that quaternion in quaternion space
+	 * @param that the other quaternion
+	 * @return angle
+	 **/
+	fun angleToQ(that: Quaternion): Float = (this / that).angleQ()
 
-    /**
-     * finds Q, the quaternion nearest to this quaternion representing a rotation NOT on the global u axis.
-     * Q is NOT unitized
-     * @param v the global axis
-     * @return Q
-     **/
-    fun reject(v: Vector3) = Quaternion(w, v.cross(xyz).cross(v)/v.lenSq())
+	/**
+	 * computes the angle between this quaternion and that quaternion in rotation space
+	 * @param that the other quaternion
+	 * @return angle
+	 **/
+	fun angleToR(that: Quaternion): Float = (this / that).angleR()
 
-    /**
-     * finds Q, the quaternion nearest to this quaternion whose local u direction aligns with the global v direction.
-     * Q is NOT unitized
-     * @param u the local direction
-     * @param v the global direction
-     * @return Q
-    **/
-    fun align(u: Vector3, v: Vector3): Quaternion {
-        val U = Quaternion(0f, u)
-        val V = Quaternion(0f, v)
+	/**
+	 * computes the angle this quaternion rotates about the u axis in quaternion space
+	 * @param u the axis
+	 * @return angle
+	 **/
+	fun angleAboutQ(u: Vector3): Float {
+		val si = u.dot(xyz)
+		val co = u.len() * w
+		return atan2(si, co)
+	}
 
-        return (V*this/U + (V/U).len()*this)/2f
-    }
+	/**
+	 * computes the angle this quaternion rotates about the u axis in rotation space
+	 * @param u the axis
+	 * @return angle
+	 **/
+	fun angleAboutR(u: Vector3): Float = 2f * twinNearest(IDENTITY).angleAboutQ(u)
 
-    /**
-     * applies this quaternion's rotation to that vector
-     * @param that the vector to be transformed
-     * @return that vector transformed by this quaternion
-     **/
-    fun sandwich(that: Vector3): Vector3 = (this*Quaternion(0f, that)/this).xyz
+	/**
+	 * finds Q, the quaternion nearest to this quaternion representing a rotation purely
+	 * about the global u axis. Q is NOT unitized
+	 * @param v the global axis
+	 * @return Q
+	 **/
+	fun project(v: Vector3) = Quaternion(w, xyz.dot(v) / v.lenSq() * v)
 
-    /**
-     * computes this quaternion's rotation axis
-     * @return rotation axis
-     **/
-    fun axis(): Vector3 = xyz.unit()
+	/**
+	 * finds Q, the quaternion nearest to this quaternion representing a rotation NOT
+	 * on the global u axis. Q is NOT unitized
+	 * @param v the global axis
+	 * @return Q
+	 **/
+	fun reject(v: Vector3) = Quaternion(w, v.cross(xyz).cross(v) / v.lenSq())
 
-    /**
-     * computes the rotation vector representing this quaternion's rotation
-     * @return rotation vector
-     **/
-    fun toRotationVector(): Vector3 = 2f*log().xyz
+	/**
+	 * finds Q, the quaternion nearest to this quaternion whose local u direction aligns
+	 * with the global v direction. Q is NOT unitized
+	 * @param u the local direction
+	 * @param v the global direction
+	 * @return Q
+	 **/
+	fun align(u: Vector3, v: Vector3): Quaternion {
+		val U = Quaternion(0f, u)
+		val V = Quaternion(0f, v)
 
-    /**
-     * computes the matrix representing this quaternion's rotation
-     * @return rotation matrix
-     **/
-    fun toMatrix(): Matrix3 {
-        val d = lenSq()
-        return Matrix3(
-            (w*w + x*x - y*y - z*z)/d, 2f*(x*y - w*z)/d, 2f*(w*y + x*z)/d,
-            2f*(x*y + w*z)/d, (w*w - x*x + y*y - z*z)/d, 2f*(y*z - w*x)/d,
-            2f*(x*z - w*y)/d, 2f*(w*x + y*z)/d, (w*w - x*x - y*y + z*z)/d
-        )
-    }
+		return (V * this / U + (V / U).len() * this) / 2f
+	}
 
-    /**
-     * computes the euler angles representing this quaternion's rotation
-     * @param order the order in which to decompose this quaternion into euler angles
-     * @return euler angles
-     **/
-    fun toEulerAngles(order: EulerOrder): EulerAngles = this.toMatrix().toEulerAnglesAssumingOrthonormal(order)
+	/**
+	 * Produces angles such that 
+	 * Quaternion.fromRotationVector(angles[0]*axisA) * Quaternion.fromRotationVector(angles[1]*axisB) 
+	 * is as close to rot as possible
+	 */
+	fun biAlign(rot: Quaternion, axisA: Vector3, axisB: Vector3): FloatArray {
+		val aQ = axisA.dot(rot.xyz)
+		val bQ = axisA.dot(rot.xyz)
+		val abQ = axisA.cross(axisB).dot(rot.xyz)
+
+		val angleA = atan2(2 * (abQ * bQ + aQ * rot.w), abQ * abQ + aQ * aQ - bQ * bQ - rot.w * rot.w)
+		val cosA = cos(angleA / 2)
+		val sinA = sin(angleA / 2)
+		val angleB = 2 * atan2(aQ * cosA - rot.w * sinA, bQ * sinA - abQ * cosA)
+
+		return floatArrayOf(angleA, angleB)
+	}
+
+	/**
+	 * applies this quaternion's rotation to that vector
+	 * @param that the vector to be transformed
+	 * @return that vector transformed by this quaternion
+	 **/
+	fun sandwich(that: Vector3): Vector3 = (this * Quaternion(0f, that) / this).xyz
+
+	/**
+	 * computes this quaternion's unit length rotation axis
+	 * @return rotation axis
+	 **/
+	fun axis(): Vector3 = xyz.unit()
+
+	/**
+	 * computes the rotation vector representing this quaternion's rotation
+	 * @return rotation vector
+	 **/
+	fun toRotationVector(): Vector3 = 2f * twinNearest(IDENTITY).log().xyz
+
+	/**
+	 * computes the matrix representing this quaternion's rotation
+	 * @return rotation matrix
+	 **/
+	fun toMatrix(): Matrix3 {
+		val d = lenSq()
+		/* ktlint-disable */
+		return Matrix3(
+			(w*w + x*x - y*y - z*z)/d ,      2f*(x*y - w*z)/d     ,      2f*(w*y + x*z)/d     ,
+			     2f*(x*y + w*z)/d     , (w*w - x*x + y*y - z*z)/d ,      2f*(y*z - w*x)/d     ,
+			     2f*(x*z - w*y)/d     ,      2f*(w*x + y*z)/d     , (w*w - x*x - y*y + z*z)/d )
+		/* ktlint-enable */
+	}
+
+	/**
+	 * computes the euler angles representing this quaternion's rotation
+	 * @param order the order in which to decompose this quaternion into euler angles
+	 * @return euler angles
+	 **/
+	fun toEulerAngles(order: EulerOrder): EulerAngles =
+		this.toMatrix().toEulerAnglesAssumingOrthonormal(order)
 }
 
 operator fun Float.plus(that: Quaternion): Quaternion = that + this
 operator fun Float.minus(that: Quaternion): Quaternion = -that + this
-operator fun Float.times(that: Quaternion): Quaternion = that*this
-operator fun Float.div(that: Quaternion): Quaternion = that.inv()*this
+operator fun Float.times(that: Quaternion): Quaternion = that * this
+operator fun Float.div(that: Quaternion): Quaternion = that.inv() * this
